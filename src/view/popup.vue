@@ -1,16 +1,58 @@
 <script setup>
+/*global chrome*/
 import { reactive } from 'vue';
-import { Button } from 'ant-design-vue';
+import { Button, Table } from 'ant-design-vue';
 const state = reactive({
-  msg: 'world'
+  msg: 'world',
+  dataSource: [
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address: '10 Downing Street'
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address: '10 Downing Street'
+    }
+  ],
+
+  columns: [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name'
+    },
+    {
+      title: 'Age',
+      dataIndex: 'age',
+      key: 'age'
+    },
+    {
+      title: 'Address',
+      dataIndex: 'address',
+      key: 'address'
+    }
+  ]
 });
+const click = () => {
+  console.log('clicked...');
+  chrome.action.setBadgeText({
+    text: 'ON'
+  });
+};
 </script>
 
 <template>
   <div class="main_app">
-    <h1>Hello {{ state.msg }} phoo 2</h1>
-    <Button type="primary" loading> primary button </Button>
-    <Button type="dashed"> dashed button </Button>
+    <Button type="primary" @click="click"> Start Scraping </Button>
+    <Table
+      :data-source="state.dataSource"
+      :columns="state.columns"
+      :pagination="false"
+    />
   </div>
 </template>
 
