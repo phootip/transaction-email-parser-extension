@@ -1,20 +1,23 @@
+<script setup>
+import { reactive } from 'vue';
+import { Button } from "ant-design-vue";
+const state = reactive({
+  msg: 'world'
+})
+</script>
+
 <template>
   <div class="main_app">
-    <h1>Hello {{msg}} phoo</h1>
+    <h1>Hello {{ state.msg }} phoo 2</h1>
+    <Button type="primary">
+      primary button
+    </Button>
+    <Button type="dashed">
+      dashed button
+    </Button>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'popupView',
-  data () {
-    return {
-      msg: 'popup'
-    }
-  }
-}
-
-</script>
 
 <style>
 .main_app {
