@@ -1,6 +1,6 @@
 <script setup>
 /*global chrome*/
-import { reactive } from 'vue';
+import { reactive, onMounted } from 'vue';
 import { Button, Table } from 'ant-design-vue';
 import { textToTransaction } from 'transaction-email-parser';
 import dayjs from 'dayjs';
@@ -19,30 +19,25 @@ const state = reactive({
   msg: '',
   count: 0,
   dataSource: [],
+  scraping: false,
   columns: default_headers.map((header) => {
     return { title: header, dataIndex: header, key: header };
   })
 });
 const click = async () => {
-  const tabs = await chrome.tabs.query({
-    active: true,
-    currentWindow: true
+  await chrome.runtime.sendMessage({
+    subject: 'toggleScrape'
   });
-  const mailDoms = await chrome.tabs.sendMessage(tabs[0].id, {
-    from: 'popup',
-    subject: 'DOMInfo'
-  });
-  for (const mailDom of mailDoms) {
-    const result = textToTransaction(mailDom.text);
-    if (state.dataSource.find(data => data.legacyId === result.legacyId)) continue
-    result.date = dayjs(result.date).format()
-    state.dataSource.push(result);
-    localStorage['dataSource'] = state.dataSource
-  }
 };
-window.addEventListener('DOMContentLoaded', () => {
-  console.log('DOMContentLoaded');
-  state.count++;
+onMounted(async () => {
+  await chrome.runtime.sendMessage({ subject: 'getState' });
+});
+chrome.runtime.onMessage.addListener((msg) => {
+  console.log(msg);
+  if (msg.subject === 'updatePopup') {
+    state.dataSource = msg.state.dataSource;
+    state.scraping = msg.state.scraping;
+  }
 });
 </script>
 
@@ -50,7 +45,7 @@ window.addEventListener('DOMContentLoaded', () => {
   <div class="main_app">
     <Button type="primary" @click="click"> Start Scraping </Button>
     <div>
-      {{ state.msg }}
+      {{ state.scraping }}
     </div>
     <Table
       :data-source="state.dataSource"
