@@ -1,8 +1,9 @@
 /*global chrome*/
 chrome.runtime.onMessage.addListener((msg, sender, response) => {
-  console.log(msg);
   if (msg.from === 'popup' && msg.subject === 'DOMInfo') {
-    const txt = document.documentElement.innerHTML;
-    response(txt);
+    const mailsDom = document.querySelectorAll('div[data-legacy-message-id]')
+    const output = []
+    mailsDom.forEach(mail => { return output.push({ text: mail.outerHTML, legacyId: mail.dataset.legacyMessageId }) })
+    response(output)
   }
 });

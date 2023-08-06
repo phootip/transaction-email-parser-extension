@@ -12,41 +12,33 @@ const default_headers = [
   'opposing_account',
   'amount',
   'date',
-  'id',
+  'legacyId',
   'url'
 ];
 const state = reactive({
-  msg: 'world',
+  msg: '',
   count: 0,
   dataSource: [],
   columns: default_headers.map((header) => {
     return { title: header, dataIndex: header, key: header };
   })
 });
-const regex = new RegExp('เข้าบัญชี:\\s*(x+[0-9]{4})');
 const click = async () => {
-  console.log('clicked...');
-  state.count++;
   const tabs = await chrome.tabs.query({
     active: true,
     currentWindow: true
   });
-  const txt = await chrome.tabs.sendMessage(tabs[0].id, {
+  const mailDoms = await chrome.tabs.sendMessage(tabs[0].id, {
     from: 'popup',
     subject: 'DOMInfo'
   });
-  let result = textToTransaction(txt);
-  result.date = dayjs(result.date).format()
-  state.dataSource.push(result);
-  state.msg = result;
-  console.log(state.dataSource);
-  // if (txt.includes('รับเงินผ่านรายการพร้อมเพย์')) {
-  //   state.count = -1;
-  //   const values = regex.exec(txt);
-  //   state.msg = values;
-  // }
-  // state.msg = txt;
-  // console.log(txt)
+  for (const mailDom of mailDoms) {
+    const result = textToTransaction(mailDom.text);
+    if (state.dataSource.find(data => data.legacyId === result.legacyId)) continue
+    result.date = dayjs(result.date).format()
+    state.dataSource.push(result);
+    localStorage['dataSource'] = state.dataSource
+  }
 };
 window.addEventListener('DOMContentLoaded', () => {
   console.log('DOMContentLoaded');
@@ -56,8 +48,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
 <template>
   <div class="main_app">
-    <Button type="primary" @click="() => state.count++"> test </Button>
-    {{ state.count }}
     <Button type="primary" @click="click"> Start Scraping </Button>
     <div>
       {{ state.msg }}
