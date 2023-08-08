@@ -33,7 +33,6 @@ onMounted(async () => {
   await chrome.runtime.sendMessage({ subject: 'getState' });
 });
 chrome.runtime.onMessage.addListener((msg) => {
-  console.log(msg);
   if (msg.subject === 'updatePopup') {
     state.dataSource = msg.state.dataSource;
     state.scraping = msg.state.scraping;
