@@ -6,13 +6,16 @@ const state = {
 	scraping: false,
 	dataSource: [],
 }
-chrome.runtime.onMessage.addListener((msg, sender, response) => {
+chrome.runtime.onMessage.addListener(async (msg, sender, response) => {
 	if (msg.subject === 'toggleScrape') {
 		state.scraping = !state.scraping
-		if (state.scraping) queryAndUpdate()
-		else updatePopup()
+		if (state.scraping) await query()
+		updatePopup()
 	}
 	else if (msg.subject === 'getState') {
+		updatePopup()
+	} else if (msg.subject === 'manual') {
+		await query()
 		updatePopup()
 	}
 })
@@ -20,20 +23,29 @@ chrome.runtime.onMessage.addListener((msg, sender, response) => {
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 	if (!state.scraping) return
 	if (!('title' in changeInfo && changeInfo.title !== 'Gmail' && tab.active)) return
-	queryAndUpdate()
+	await query()
+	updatePopup()
 })
 
 chrome.tabs.onActivated.addListener(async (tabId) => {
 	if (!state.scraping) return
-	queryAndUpdate()
+	await query()
+	updatePopup()
 })
 
-async function queryAndUpdate() {
+async function query() {
+	console.log('querying')
 	const tabId = await checkGmailUrl()
-	if (!tabId) return
-	const mailDoms = await chrome.tabs.sendMessage(tabId, { subject: 'getMailDoms' });
-	domsToTransaction(mailDoms)
-	updatePopup()
+	if (!tabId) {
+		showAlert('this page is not a gmail')
+		return
+	}
+	try {
+		const mailDoms = await chrome.tabs.sendMessage(tabId, { subject: 'getMailDoms' });
+		domsToTransaction(mailDoms)
+	} catch (e) {
+		showAlert()
+	}
 }
 
 function glob(pattern, input) {
@@ -44,9 +56,7 @@ function glob(pattern, input) {
 async function checkGmailUrl() {
 	const tabs = await chrome.tabs.query({
 		active: true,
-		// currentWindow: true
 	});
-	console.log(tabs)
 	const id = tabs[0].id;
 	const url = tabs[0].url;
 	if (glob('https://mail.google.com/mail/*', url)) return id
@@ -70,5 +80,11 @@ async function updatePopup() {
 		from: 'popup',
 		subject: 'updatePopup',
 		state
+	});
+}
+async function showAlert(msg) {
+	await chrome.runtime.sendMessage({
+		subject: 'queryError',
+		warning: msg
 	});
 }
